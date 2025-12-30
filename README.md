@@ -1,1 +1,1 @@
-# Recipe-Chatbot
+# Recipe-Bot
