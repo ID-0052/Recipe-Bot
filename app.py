@@ -9,7 +9,7 @@ st.set_page_config(
 )
 
 MODEL_NAME = "gemini-2.5-flash"
-MAX_TOKENS = 1000
+MAX_TOKENS = 2500
 
 API_KEY = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
 if not API_KEY:
