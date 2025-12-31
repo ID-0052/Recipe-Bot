@@ -2,57 +2,79 @@ import os
 import streamlit as st
 from google import genai
 
-st.set_page_config(page_title="RecipeBot", page_icon="🍳", layout="wide")
+st.set_page_config(
+    page_title="RecipeBot",
+    page_icon="🍳",
+    layout="wide"
+)
 
 MODEL_NAME = "gemini-2.5-flash"
-MAX_OUTPUT_TOKENS = 1500
-TEMPERATURE = 0.2
+MAX_TOKENS = 2500
 
 API_KEY = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
-client = genai.Client(api_key=API_KEY)
+if not API_KEY:
+    st.error("Missing GEMINI_API_KEY in environment or Streamlit secrets.")
+    st.stop()
 
-def call_gemini(prompt):
-    r = client.models.generate_content(
+def call_gemini(prompt: str) -> str:
+    client = genai.Client(api_key=API_KEY)
+
+    response = client.models.generate_content(
         model=MODEL_NAME,
         contents=prompt,
-        config={"max_output_tokens": MAX_OUTPUT_TOKENS, "temperature": TEMPERATURE}
+        config={"max_output_tokens": MAX_TOKENS}
     )
-    t = ""
-    for p in r.candidates[0].content.parts:
-        if hasattr(p,"text"):
-            t += p.text
-        elif isinstance(p,dict):
-            t += p.get("text","")
-    return t.strip()
+
+    try:
+        return response.candidates[0].content.parts[0].text.strip()
+    except Exception:
+        return "Sorry, I couldn't generate a recipe."
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "reply" not in st.session_state:
-    st.session_state.reply = ""
-if "awaiting_more" not in st.session_state:
-    st.session_state.awaiting_more = False
 
-st.title("🍳 RecipeBot")
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-for r,c in st.session_state.messages:
-    with st.chat_message(r):
-        st.markdown(c)
+col1, col2 = st.columns([8, 1])
+col1.title("🍳 RecipeBot")
 
-q = st.chat_input("Enter dish name")
+if col2.button("New Chat"):
+    st.session_state.messages = []
+    st.rerun()
 
-if q:
-    prompt = f"Write a complete recipe for {q}. Ingredients then steps."
-    out = call_gemini(prompt)
-    st.session_state.reply = out
-    st.session_state.awaiting_more = len(out) > 1300
-    st.session_state.messages.append(("user", q))
-    st.session_state.messages.append(("assistant", out))
+st.sidebar.title("Chat History")
 
-if st.session_state.awaiting_more:
-    if st.button("Continue Recipe"):
-        more_prompt = "Continue this recipe exactly from where it stopped:\n\n" + st.session_state.reply[-4000:]
-        more = call_gemini(more_prompt)
-        st.session_state.reply += "\n" + more
-        st.session_state.messages[-1] = ("assistant", st.session_state.reply)
-        if len(more) < 500:
-            st.session_state.awaiting_more = False
+for i, (title, chat) in enumerate(st.session_state.history):
+    if st.sidebar.button(title, key=f"history_{i}"):
+        st.session_state.messages = chat.copy()
+        st.rerun()
+
+for role, content in st.session_state.messages:
+    with st.chat_message(role):
+        st.markdown(content)
+
+user_prompt = st.chat_input("Enter dish name or ingredients")
+
+if user_prompt:
+    st.session_state.messages.append(("user", user_prompt))
+    with st.chat_message("user"):
+        st.markdown(user_prompt)
+
+    recipe_prompt = (
+        f"Write complete recipe for {user_prompt}, "
+        "Include all ingredients with quantities and simple instructions"
+        "No greetings, tips, or extra commentary."
+    )
+
+    with st.chat_message("assistant"):
+        with st.spinner("Generating recipe..."):
+            reply = call_gemini(recipe_prompt)
+            st.markdown(reply)
+
+    st.session_state.messages.append(("assistant", reply))
+
+    title = user_prompt[:40]
+    st.session_state.history.append(
+        (title, st.session_state.messages.copy())
+    )
