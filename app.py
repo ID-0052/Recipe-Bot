@@ -50,9 +50,9 @@ if q:
 
 if st.session_state.awaiting_more:
     if st.button("Continue Recipe"):
-        more = call_gemini("Continue the same recipe")
+        more_prompt = "Continue this recipe exactly from where it stopped:\n\n" + st.session_state.reply[-4000:]
+        more = call_gemini(more_prompt)
         st.session_state.reply += "\n" + more
         st.session_state.messages[-1] = ("assistant", st.session_state.reply)
         if len(more) < 500:
             st.session_state.awaiting_more = False
-
