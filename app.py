@@ -9,7 +9,7 @@ st.set_page_config(
 )
 
 MODEL_NAME = "gemini-2.5-flash"
-MAX_TOKENS = 2500
+MAX_TOKENS = 5000
 
 API_KEY = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
 if not API_KEY:
@@ -64,7 +64,7 @@ if user_prompt:
     recipe_prompt = (
         f"Write complete recipe for {user_prompt}, "
         "Include all ingredients with quantities and simple instructions"
-        "No greetings, tips, or extra commentary."
+        "No greetings, tips, or extra commentary, but no turnications."
     )
 
     with st.chat_message("assistant"):
