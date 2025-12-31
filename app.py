@@ -1,4 +1,4 @@
-import os
+Simport os
 import streamlit as st
 from google import genai
 
@@ -68,7 +68,7 @@ if user_prompt:
     )
 
     with st.chat_message("assistant"):
-        with st.spinner("Generating recipe..."):
+        with st.spinner("Searching recipe..."):
             reply = call_gemini(recipe_prompt)
             st.markdown(reply)
 
