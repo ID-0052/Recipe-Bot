@@ -29,21 +29,10 @@ def call_gemini(prompt):
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "history" not in st.session_state:
-    st.session_state.history = []
 if "last_reply" not in st.session_state:
     st.session_state.last_reply = ""
-if "last_prompt" not in st.session_state:
-    st.session_state.last_prompt = ""
 
-col1, col2 = st.columns([8, 1])
-col1.title("🍳 RecipeBot")
-
-if col2.button("New Chat"):
-    st.session_state.messages = []
-    st.session_state.last_reply = ""
-    st.session_state.last_prompt = ""
-    st.rerun()
+st.title("🍳 RecipeBot")
 
 for role, content in st.session_state.messages:
     with st.chat_message(role):
@@ -53,22 +42,15 @@ user_prompt = st.chat_input("Enter dish name or ingredients")
 
 if user_prompt:
     st.session_state.messages.append(("user", user_prompt))
-    with st.chat_message("user"):
-        st.markdown(user_prompt)
-
     recipe_prompt = f"Write a complete recipe for {user_prompt}. List ingredients with quantities then step by step instructions."
-
-    with st.chat_message("assistant"):
-        reply = call_gemini(recipe_prompt)
-        st.session_state.last_reply = reply
-        st.session_state.last_prompt = recipe_prompt
-        st.markdown(reply)
-
+    reply = call_gemini(recipe_prompt)
+    st.session_state.last_reply = reply
     st.session_state.messages.append(("assistant", reply))
+    st.rerun()
 
 if st.session_state.last_reply:
     if st.button("Continue Recipe"):
-        continuation = call_gemini("Continue this recipe:\n" + st.session_state.last_reply)
+        continuation = call_gemini("Continue this recipe from where it stopped:\n" + st.session_state.last_reply)
         st.session_state.last_reply += "\n" + continuation
         st.session_state.messages[-1] = ("assistant", st.session_state.last_reply)
         st.rerun()
